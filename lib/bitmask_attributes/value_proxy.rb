@@ -32,7 +32,7 @@ module BitmaskAttributes
     
       def validate!
         each do |value|
-          if @mapping.key? value
+          if @mapping.key? value.to_sym
             true
           else
             raise ArgumentError, "Unsupported value for `#{@attribute}': #{value.inspect}"

@@ -4,7 +4,7 @@ module BitmaskAttributes
     
     def initialize(attribute, values=[], allow_null = true, zero_value = nil, &extension)
       @attribute = attribute
-      @values = values
+      @values = values.map(&:to_sym)
       @extension = extension
       @allow_null = allow_null
       @zero_value = zero_value
@@ -43,7 +43,7 @@ module BitmaskAttributes
       end
 
       def generate_bitmasks_on(model)
-        model.bitmasks[attribute] = HashWithIndifferentAccess.new.tap do |mapping|
+        model.bitmasks[attribute] = ActiveSupport::OrderedHash.new.tap do |mapping|
           values.each_with_index do |value, index|
             mapping[value] = 0b1 << index
           end
@@ -86,7 +86,7 @@ module BitmaskAttributes
       def create_attribute_methods_on(model)
         model.class_eval %(
           def self.values_for_#{attribute}      # def self.values_for_numbers
-            #{values}                           #   [:one, :two, :three]
+            #{values.inspect}                   #   [:one, :two, :three]
           end                                   # end
         )
       end
@@ -97,7 +97,7 @@ module BitmaskAttributes
             values.inject(0) do |bitmask, value|
               if #{eval_string_for_zero('value')}
                 bit = 0
-              elsif (bit = bitmasks[:#{attribute}][value]).nil?
+              elsif (bit = bitmasks[:#{attribute}][value.to_sym]).nil?
                 raise ArgumentError, "Unsupported value for #{attribute}: \#{value.inspect}"
               end
               bitmask | bit

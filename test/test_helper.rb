@@ -1,7 +1,9 @@
 require "rubygems"
 require 'bundler/setup'
 
-require 'test/unit'
+# ensures you're using the gem, and not the built in MT
+require 'minitest/autorun'
+
 begin; require 'turn'; rescue LoadError; end
 require 'shoulda'
 
