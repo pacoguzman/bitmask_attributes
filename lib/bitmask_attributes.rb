@@ -10,7 +10,7 @@ module BitmaskAttributes
         raise ArgumentError, "Must provide an Array :as option"
       end
 
-      bitmask_definitions[attribute] = Definition.new(attribute, options[:as].to_a,options[:null].nil? || options[:null], options[:zero_value], &extension)
+      bitmask_definitions[attribute] = Definition.new(attribute, options[:as].to_a, options[:null].nil? || options[:null], options[:zero_value], &extension)
       bitmask_definitions[attribute].install_on(self)
     end
 
