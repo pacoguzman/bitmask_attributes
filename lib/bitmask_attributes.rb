@@ -1,5 +1,6 @@
 require 'bitmask_attributes/definition'
 require 'bitmask_attributes/value_proxy'
+require 'bitmask_attributes/railtie' if defined?(Rails)
 
 module BitmaskAttributes
   extend ActiveSupport::Concern
@@ -33,5 +34,3 @@ module BitmaskAttributes
     end
   end
 end
-
-ActiveRecord::Base.send :include, BitmaskAttributes
