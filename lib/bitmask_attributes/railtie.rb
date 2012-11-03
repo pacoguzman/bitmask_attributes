@@ -7,14 +7,13 @@ module BitmaskAttributes
         BitmaskAttributes::Railtie.insert
       end
     end
+  end
 
-    class Railtie
-      def self.insert
-        if defined?(ActiveRecord)
-          ActiveRecord::Base.send(:include, BitmaskAttributes)
-        end
+  class Railtie
+    def self.insert
+      if defined?(ActiveRecord)
+        ActiveRecord::Base.send(:include, BitmaskAttributes)
       end
     end
   end
-
 end
