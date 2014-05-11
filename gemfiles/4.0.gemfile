@@ -9,5 +9,6 @@ gem "sqlite3", ">=1.3.5"
 gem "turn"
 gem "rails", "~> 4.0.0"
 gem "sass-rails", "~> 4.0.0"
+gem "minitest"
 
 gemspec :path=>"../"
