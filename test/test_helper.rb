@@ -5,9 +5,9 @@ require 'bundler/setup'
 require 'minitest/autorun'
 
 begin; require 'turn'; rescue LoadError; end
-require 'shoulda'
 
 require 'active_record'
+require 'shoulda'
 
 $:.unshift File.expand_path("../../lib", __FILE__)
 require 'bitmask_attributes'

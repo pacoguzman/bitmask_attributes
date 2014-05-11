@@ -1,15 +1,15 @@
 module BitmaskAttributes
   class Definition
     attr_reader :attribute, :values, :allow_null, :zero_value, :extension
-    
-    def initialize(attribute, values=[], allow_null = true, zero_value = nil, &extension)
+
+    def initialize(attribute, values = [], allow_null = true, zero_value = nil, &extension)
       @attribute = attribute
       @values = values.map(&:to_sym)
       @extension = extension
       @allow_null = allow_null
       @zero_value = zero_value
     end
-    
+
     def install_on(model)
       validate_for model
       generate_bitmasks_on model
@@ -49,20 +49,23 @@ module BitmaskAttributes
           end
         end
       end
-    
+
       def override(model)
         override_getter_on(model)
         override_setter_on(model)
       end
-    
+
       def override_getter_on(model)
         model.class_eval %(
           def #{attribute}
             @#{attribute} ||= BitmaskAttributes::ValueProxy.new(self, :#{attribute}, &self.class.bitmask_definitions[:#{attribute}].extension)
           end
+          def reload_#{attribute}
+            @#{attribute} = nil
+          end
         )
       end
-    
+
       def override_setter_on(model)
         model.class_eval %(
           def #{attribute}=(raw_value)
@@ -73,7 +76,7 @@ module BitmaskAttributes
             unless entry.is_a? Fixnum
               raise ArgumentError, "Expected a Fixnum, but got: \#{entry.inspect}"
             end
-            unless entry.between?(0, 2 ** (self.class.bitmasks[:#{attribute}].size - 1))
+            unless entry.between?(0, ((2 ** self.class.bitmasks[:#{attribute}].size) - 1))
               raise ArgumentError, "Unsupported value for #{attribute}: \#{entry.inspect}"
             end
             @#{attribute} = nil
@@ -81,7 +84,7 @@ module BitmaskAttributes
           end
         )
       end
-    
+
       # Returns the defined values as an Array.
       def create_attribute_methods_on(model)
         model.class_eval %(
@@ -90,7 +93,7 @@ module BitmaskAttributes
           end                                   # end
         )
       end
-    
+
       def create_convenience_class_method_on(model)
         model.class_eval %(
           def self.bitmask_for_#{attribute}(*values)
@@ -120,7 +123,7 @@ module BitmaskAttributes
       def create_convenience_instance_methods_on(model)
         values.each do |value|
           model.class_eval %(
-            def #{attribute}_for_#{value}?                  
+            def #{attribute}_for_#{value}?
               self.#{attribute}?(:#{value})
             end
           )
@@ -137,9 +140,9 @@ module BitmaskAttributes
           end
         )
       end
-    
+
       def create_scopes_on(model)
-        or_is_null_condition = " OR #{attribute} IS NULL" if allow_null
+        or_is_null_condition = " OR #{model.table_name}.#{attribute} IS NULL" if allow_null
 
         model.class_eval %(
           scope :with_#{attribute},
@@ -154,7 +157,7 @@ module BitmaskAttributes
                 where(sets.join(' AND '))
               end
             }
-          scope :without_#{attribute}, 
+          scope :without_#{attribute},
             proc { |*values|
               if values.blank?
                 no_#{attribute}
@@ -164,14 +167,14 @@ module BitmaskAttributes
             }
 
           scope :with_exact_#{attribute},
-            proc { | *values|
+            proc { |*values|
               if values.blank?
                 no_#{attribute}
               else
                 where("#{model.table_name}.#{attribute} = ?", ::#{model}.bitmask_for_#{attribute}(*values))
               end
             }
-          
+
           scope :no_#{attribute}, proc { where("#{model.table_name}.#{attribute} = 0#{or_is_null_condition}") }
 
           scope :with_any_#{attribute},
@@ -188,7 +191,7 @@ module BitmaskAttributes
             scope :#{attribute}_for_#{value},
                   proc { where('#{model.table_name}.#{attribute} & ? <> 0', ::#{model}.bitmask_for_#{attribute}(:#{value})) }
           )
-        end      
+        end
       end
 
       def eval_string_for_zero(value_string)

@@ -11,7 +11,18 @@ module BitmaskAttributes
         raise ArgumentError, "Must provide an Array :as option"
       end
 
-      bitmask_definitions[attribute] = Definition.new(attribute, options[:as].to_a, options[:null].nil? || options[:null], options[:zero_value], &extension)
+      if default = options[:default]
+        after_initialize do
+          send("#{attribute}=", default) unless send("#{attribute}?") || persisted?
+        end
+      end
+
+      bitmask_definitions[attribute] = Definition.new(attribute,
+                                                      options[:as].to_a,
+                                                      options[:null].nil? || options[:null],
+                                                      options[:zero_value],
+                                                      &extension)
+
       bitmask_definitions[attribute].install_on(self)
     end
 
@@ -32,5 +43,11 @@ module BitmaskAttributes
     def base_class_bitmasks
       @bitmasks ||= {}
     end
+  end
+
+  def reload(*)
+    super
+    self.class.bitmasks.keys.each{|attribute| self.send("reload_#{attribute}")}
+    self
   end
 end

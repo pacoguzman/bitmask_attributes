@@ -2,6 +2,7 @@ ActiveRecord::Schema.define do
   create_table :campaign_with_nulls do |t|
     t.integer :company_id
     t.integer :medium, :allow_zero, :misc, :Legacy
+    t.integer :different_per_class
     t.string :type # STI
   end
   create_table :company_with_nulls do |t|
@@ -10,10 +11,14 @@ ActiveRecord::Schema.define do
   create_table :campaign_without_nulls do |t|
     t.integer :company_id
     t.integer :medium, :allow_zero, :misc, :Legacy, :null => false, :default => 0
+    t.integer :different_per_class
     t.string :type # STI
   end
   create_table :company_without_nulls do |t|
     t.string :name
+  end
+  create_table :default_values do |t|
+    t.integer :default_sym, :default_array
   end
 end
 
@@ -27,6 +32,7 @@ class CampaignWithNull < ActiveRecord::Base
   belongs_to :company,:class_name => 'CompanyWithNull'
   bitmask :medium, :as => [:web, :print, :email, :phone]
   bitmask :allow_zero, :as => [:one, :two, :three], :zero_value => :none
+  bitmask :different_per_class, :as => [:set_for_parent]
   bitmask :misc, :as => %w(some useless values) do
     def worked?
       true
@@ -36,6 +42,7 @@ class CampaignWithNull < ActiveRecord::Base
 end
 
 class SubCampaignWithNull < CampaignWithNull
+  bitmask :different_per_class, :as => [:set_for_sub]
 end
 
 class CompanyWithoutNull < ActiveRecord::Base
@@ -55,4 +62,9 @@ class CampaignWithoutNull < ActiveRecord::Base
 end
 
 class SubCampaignWithoutNull < CampaignWithNull
+end
+
+class DefaultValue < ActiveRecord::Base
+  bitmask :default_sym, :as => [:x, :y, :z], :default => :y
+  bitmask :default_array, :as => [:x, :y, :z], :default => [:y, :z]
 end

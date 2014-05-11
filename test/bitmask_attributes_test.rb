@@ -2,7 +2,7 @@ require 'test_helper'
 
 class BitmaskAttributesTest < ActiveSupport::TestCase
 
-  def self.context_with_classes(label,campaign_class,company_class)
+  def self.context_with_classes(label, campaign_class, company_class)
     context label do
       setup do
         @campaign_class = campaign_class
@@ -139,6 +139,19 @@ class BitmaskAttributesTest < ActiveSupport::TestCase
         assert_stored campaign, :web, :print
       end
 
+      should "update bitmask values currently in the database with reload" do
+        instance1 = @campaign_class.create(:medium => [:web, :print])
+        instance2 = @campaign_class.find(instance1.id)
+        assert instance1.id == instance2.id
+        assert instance1.object_id != instance2.object_id
+        assert instance1.update_attributes(:medium => [:email])
+
+        assert_equal [:web, :print],instance2.medium
+
+        assert_equal @campaign_class,instance2.reload.class
+        assert_equal [:email],instance2.medium
+      end
+
       context "checking" do
         setup { @campaign = @campaign_class.new(:medium => [:web, :print]) }
 
@@ -240,7 +253,7 @@ class BitmaskAttributesTest < ActiveSupport::TestCase
         assert campaign.save
 
         assert_equal(
-          @campaign_class.find(:all, :conditions => ['medium & ? <> 0', @campaign_class.bitmask_for_medium(:print)]),
+          @campaign_class.where('medium & ? <> 0', @campaign_class.bitmask_for_medium(:print)).to_a,
           @campaign_class.medium_for_print
         )
 
@@ -287,6 +300,41 @@ class BitmaskAttributesTest < ActiveSupport::TestCase
   context_with_classes 'Campaign without null attributes',CampaignWithoutNull,CompanyWithoutNull
   context_with_classes 'SubCampaign with null attributes',SubCampaignWithNull,CompanyWithNull
   context_with_classes 'SubCampaign without null attributes',SubCampaignWithoutNull,CompanyWithoutNull
+
+  should "accept a default value option" do
+    assert_equal DefaultValue.new.default_sym, [:y]
+    assert_equal DefaultValue.new.default_array, [:y, :z]
+    assert_equal DefaultValue.new(:default_sym => :x).default_sym, [:x]
+    assert_equal DefaultValue.new(:default_array => [:x]).default_array, [:x]
+  end
+  
+  should "save empty bitmask when default defined" do
+    default = DefaultValue.create
+    assert_equal [:y], default.default_sym
+    default.default_sym = []
+    default.save
+    assert_empty default.default_sym
+    default2 = DefaultValue.find(default.id)
+    assert_empty default2.default_sym
+  end
+
+  context_with_classes 'Campaign with null attributes', CampaignWithNull, CompanyWithNull
+  context_with_classes 'Campaign without null attributes', CampaignWithoutNull, CompanyWithoutNull
+  context_with_classes 'SubCampaign with null attributes', SubCampaignWithNull, CompanyWithNull
+  context_with_classes 'SubCampaign without null attributes', SubCampaignWithoutNull, CompanyWithoutNull
+  
+  should "allow subclasses to have different values for bitmask than parent" do
+    a = CampaignWithNull.new
+    b = SubCampaignWithNull.new
+    a.different_per_class = [:set_for_parent]
+    b.different_per_class = [:set_for_sub]
+    a.save!
+    b.save!
+    a.reload
+    b.reload
+    assert_equal a.different_per_class, [:set_for_parent]
+    assert_equal b.different_per_class, [:set_for_sub]
+  end
 
   private
 
